@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EnergyGuard · Monitoramento Inteligente de Energia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ===================== TOPO MOBILE ===================== -->
+<header class="mobile-bar">
+  <button class="icon-btn" id="menuToggle" aria-label="Abrir menu">
+    <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+  </button>
+  <div class="mobile-brand">
+    <span class="brand-mark"></span>
+    <span>Energy<b>Guard</b></span>
+  </div>
+  <span class="status-dot online" id="mobileStatusDot"></span>
+</header>
+
+<div class="app-shell">
+
+  <!-- ===================== MENU LATERAL ===================== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="brand-mark"></span>
+      <div class="brand-text">
+        <h1>Energy<b>Guard</b></h1>
+        <p>Monitoramento Inteligente<br>de Energia</p>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item active" data-view="dashboard">
+        <svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9h14v-9"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" data-view="monitoramento">
+        <svg viewBox="0 0 24 24"><path d="M3 17h3l3-9 4 14 3-9h5"/></svg>
+        Monitoramento
+      </button>
+      <button class="nav-item" data-view="historico">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
+        Histórico
+      </button>
+      <button class="nav-item" data-view="anomalias">
+        <svg viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>
+        Anomalias
+        <span class="nav-badge" id="navAnomalyCount">0</span>
+      </button>
+      <button class="nav-item" data-view="relatorios">
+        <svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>
+        Relatórios
+      </button>
+      <button class="nav-item" data-view="configuracoes">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1Z"/></svg>
+        Configurações
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="mini-status">
+        <span class="status-dot online"></span>
+        <div>
+          <strong>Sistema Online</strong>
+          <p>Última atualização:<br><span id="sidebarLastUpdate">agora</span></p>
+        </div>
+      </div>
+      <p class="version">EnergyGuard TCC · v1.0.0</p>
+    </div>
+  </aside>
+
+  <div class="overlay" id="overlay"></div>
+
+  <!-- ===================== CONTEÚDO ===================== -->
+  <main class="content">
+
+    <!-- Topo -->
+    <header class="topbar">
+      <div class="topbar-title">
+        <h2 id="viewTitle">Dashboard</h2>
+        <p id="viewSubtitle">Visão geral do consumo de energia em tempo real</p>
+      </div>
+      <div class="topbar-actions">
+        <span class="status-pill" id="connectionPill">
+          <span class="status-dot online"></span> Dispositivo conectado
+        </span>
+        <span class="last-update">
+          <svg viewBox="0 0 24 24" class="clock-icon"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          Atualizado há <span id="lastUpdateText">0s</span>
+        </span>
+        <button class="icon-btn" id="refreshBtn" title="Atualizar agora">
+          <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v6h-6"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Banner de alerta de anomalia -->
+    <div class="alert-banner hidden" id="alertBanner">
+      <div class="alert-icon">⚠️</div>
+      <div class="alert-text">
+        <strong>Anomalia de consumo detectada</strong>
+        <p id="alertMessage">Foi identificado um consumo acima do comportamento esperado.</p>
+      </div>
+      <button class="btn btn-outline" id="alertDetailsBtn">Ver detalhes</button>
+      <button class="alert-close" id="alertClose" aria-label="Fechar">&times;</button>
+    </div>
+
+    <!-- ========================= VIEW: DASHBOARD ========================= -->
+    <section class="view active" id="view-dashboard">
+
+      <div class="cards-grid" id="cardsGrid">
+        <!-- Cards principais injetados via JS -->
+      </div>
+
+      <div class="grid-2col">
+        <div class="panel chart-panel">
+          <div class="panel-head">
+            <h3>Consumo de Energia</h3>
+            <div class="period-select">
+              <button class="chip active" data-period="hour">Última hora</button>
+              <button class="chip" data-period="day">Hoje</button>
+              <button class="chip" data-period="week">7 dias</button>
+              <button class="chip" data-period="month">30 dias</button>
+            </div>
+          </div>
+          <canvas id="consumptionChart" height="230"></canvas>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Análise de IA</h3>
+          </div>
+          <div class="ia-status" id="iaStatusBox">
+            <div class="ia-icon ok">✓</div>
+            <div>
+              <strong id="iaStatusTitle">Consumo dentro do padrão</strong>
+              <p id="iaStatusDesc">Nenhuma anomalia detectada no comportamento atual (Isolation Forest).</p>
+            </div>
+          </div>
+          <div class="mini-stats">
+            <div><span id="miniTotal">0</span><small>Medições</small></div>
+            <div><span id="miniAnomalies">0</span><small>Anomalias</small></div>
+            <div><span id="miniPercent">0%</span><small>Taxa</small></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel chart-panel">
+        <div class="panel-head">
+          <h3>Potência Elétrica em Tempo Real</h3>
+          <span class="panel-tag">Watts (W)</span>
+        </div>
+        <canvas id="powerChart" height="180"></canvas>
+      </div>
+
+      <div class="grid-2col">
+        <div class="panel">
+          <div class="panel-head"><h3>Fluxo do Sistema</h3></div>
+          <div class="flow">
+            <div class="flow-step"><span></span>ESP32</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step"><span></span>Coleta</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step"><span></span>Banco de Dados</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step"><span></span>Análise / IA</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step"><span></span>Dashboard</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step accent"><span></span>Alerta</div>
+          </div>
+          <div class="flow-caption">Medir → Armazenar → Analisar → Detectar → Alertar</div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Resumo do Dia</h3></div>
+          <div class="summary-grid">
+            <div class="summary-item">
+              <span class="summary-icon" style="color:var(--green)">⚡</span>
+              <div><strong id="sumEnergy">0 kWh</strong><small>Energia consumida</small></div>
+            </div>
+            <div class="summary-item">
+              <span class="summary-icon" style="color:var(--blue)">📶</span>
+              <div><strong id="sumAvgPower">0 W</strong><small>Potência média</small></div>
+            </div>
+            <div class="summary-item">
+              <span class="summary-icon" style="color:var(--amber)">📈</span>
+              <div><strong id="sumMaxPower">0 W</strong><small>Potência máxima</small></div>
+            </div>
+            <div class="summary-item">
+              <span class="summary-icon" style="color:var(--purple)">⏱️</span>
+              <div><strong id="sumUptime">0h 0m</strong><small>Tempo de funcionamento</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================= VIEW: MONITORAMENTO ========================= -->
+    <section class="view" id="view-monitoramento">
+      <div class="panel">
+        <div class="panel-head"><h3>Leitura ao vivo do ESP32</h3><span class="panel-tag" id="monTimestamp">--:--:--</span></div>
+        <div class="live-grid">
+          <div class="live-gauge">
+            <span class="live-label">Tensão</span>
+            <span class="live-value" id="liveVoltage">--</span>
+            <span class="live-unit">V</span>
+          </div>
+          <div class="live-gauge">
+            <span class="live-label">Corrente</span>
+            <span class="live-value" id="liveCurrent">--</span>
+            <span class="live-unit">A</span>
+          </div>
+          <div class="live-gauge">
+            <span class="live-label">Potência</span>
+            <span class="live-value" id="livePower">--</span>
+            <span class="live-unit">W</span>
+          </div>
+          <div class="live-gauge">
+            <span class="live-label">Fator de Potência</span>
+            <span class="live-value" id="livePF">--</span>
+            <span class="live-unit"></span>
+          </div>
+        </div>
+      </div>
+      <div class="panel chart-panel">
+        <div class="panel-head"><h3>Tensão e Corrente (últimos minutos)</h3></div>
+        <canvas id="liveChart" height="220"></canvas>
+      </div>
+    </section>
+
+    <!-- ========================= VIEW: HISTÓRICO ========================= -->
+    <section class="view" id="view-historico">
+      <div class="panel">
+        <div class="panel-head"><h3>Filtros</h3></div>
+        <div class="filters">
+          <label>Data inicial <input type="date" id="filterStart"></label>
+          <label>Data final <input type="date" id="filterEnd"></label>
+          <label>Período
+            <select id="filterPeriod">
+              <option value="all">Todos</option>
+              <option value="hour">Última hora</option>
+              <option value="day">Hoje</option>
+              <option value="week">7 dias</option>
+            </select>
+          </label>
+          <label>Status
+            <select id="filterStatus">
+              <option value="all">Todos</option>
+              <option value="normal">Normal</option>
+              <option value="atencao">Atenção</option>
+              <option value="anomalia">Anomalia</option>
+            </select>
+          </label>
+          <button class="btn btn-primary" id="applyFilters">Filtrar</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Registros</h3></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>Data/Hora</th><th>Tensão</th><th>Corrente</th><th>Potência</th><th>Consumo</th><th>Status</th></tr>
+            </thead>
+            <tbody id="historyTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================= VIEW: ANOMALIAS ========================= -->
+    <section class="view" id="view-anomalias">
+      <div class="cards-grid cards-grid-4">
+        <div class="stat-card">
+          <span class="stat-label">Total analisado</span>
+          <span class="stat-value" id="anomTotal">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Anomalias</span>
+          <span class="stat-value danger" id="anomCount">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Percentual</span>
+          <span class="stat-value" id="anomPercent">0%</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Última anomalia</span>
+          <span class="stat-value small" id="anomLast">--</span>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Detecção de Anomalias</h3><span class="panel-tag">Modelo: Isolation Forest</span></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>Data/Hora</th><th>Potência</th><th>Consumo</th><th>Status</th><th>Detecção</th></tr>
+            </thead>
+            <tbody id="anomalyTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================= VIEW: RELATÓRIOS ========================= -->
+    <section class="view" id="view-relatorios">
+      <div class="panel">
+        <div class="panel-head"><h3>Relatório de Consumo</h3></div>
+        <p class="panel-desc">Gere um resumo do período selecionado para apresentação ou exportação. Em uma versão futura, este relatório será gerado a partir dos dados reais armazenados no banco de dados.</p>
+        <div class="filters">
+          <label>Período
+            <select id="reportPeriod">
+              <option value="week">Últimos 7 dias</option>
+              <option value="month">Últimos 30 dias</option>
+            </select>
+          </label>
+          <button class="btn btn-primary" id="generateReport">Gerar relatório</button>
+          <button class="btn btn-outline" id="exportCsv">Exportar CSV</button>
+        </div>
+      </div>
+      <div class="panel chart-panel">
+        <div class="panel-head"><h3>Comparativo Diário</h3></div>
+        <canvas id="reportChart" height="220"></canvas>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Resumo</h3></div>
+        <div class="summary-grid" id="reportSummary"></div>
+      </div>
+    </section>
+
+    <!-- ========================= VIEW: CONFIGURAÇÕES ========================= -->
+    <section class="view" id="view-configuracoes">
+      <div class="panel">
+        <div class="panel-head"><h3>Dispositivo</h3></div>
+        <div class="config-grid">
+          <label>Nome do dispositivo <input type="text" value="ESP32-EnergyGuard-01"></label>
+          <label>Local de instalação <input type="text" value="Quadro de energia principal"></label>
+          <label>Intervalo de leitura (s) <input type="number" id="cfgInterval" value="3" min="1" max="60"></label>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Detecção de Anomalias</h3></div>
+        <div class="config-grid">
+          <label>Sensibilidade do modelo
+            <select id="cfgSensitivity">
+              <option value="low">Baixa</option>
+              <option value="medium" selected>Média</option>
+              <option value="high">Alta</option>
+            </select>
+          </label>
+          <label>Limite de potência para alerta (W) <input type="number" id="cfgThreshold" value="1800"></label>
+          <label class="checkbox-label"><input type="checkbox" id="cfgNotify" checked> Ativar notificações visuais</label>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Integração com API (futuro)</h3></div>
+        <p class="panel-desc">Quando o backend estiver disponível, o dashboard fará requisições reais para o endpoint abaixo, substituindo os dados simulados.</p>
+        <pre class="code-block">GET /api/energy
+
+{
+  "voltage": 127.4,
+  "current": 6.61,
+  "power": 842,
+  "energy": 12.84,
+  "cost": 10.27,
+  "timestamp": "2026-09-07T20:15:00",
+  "anomaly": false
+}</pre>
+        <label>Endpoint da API <input type="text" id="cfgEndpoint" value="/api/energy"></label>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
