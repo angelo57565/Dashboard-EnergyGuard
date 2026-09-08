@@ -349,26 +349,55 @@ function createLineChart(ctx, { label, color, yLabel }) {
   });
 }
 
+// Indica se a biblioteca Chart.js (carregada via CDN) ficou disponível.
+// Se o navegador estiver sem internet (ex: rede da instituição durante a
+// apresentação do TCC), os gráficos são desativados, mas o resto do
+// dashboard (navegação, cards, tabelas) continua funcionando normalmente.
+let chartsAvailable = typeof Chart !== 'undefined';
+
+function showChartFallback(canvas, message) {
+  if (!canvas || !canvas.parentNode) return;
+  const note = document.createElement('p');
+  note.className = 'chart-fallback';
+  note.textContent = message || 'Gráfico indisponível (Chart.js não carregado).';
+  canvas.replaceWith(note);
+}
+
 function initCharts() {
-  state.charts.consumption = createLineChart(document.getElementById('consumptionChart'), { label: 'Consumo (kWh)', color: '#22c55e', yLabel: 'kWh' });
-  state.charts.power = createLineChart(document.getElementById('powerChart'), { label: 'Potência (W)', color: '#f5b942', yLabel: 'W' });
-  state.charts.live = new Chart(document.getElementById('liveChart'), {
-    type: 'line',
-    data: { labels: [], datasets: [
-      { label: 'Tensão (V)', data: [], borderColor: '#a78bfa', yAxisID: 'y', tension: .35, pointRadius: 0, borderWidth: 2 },
-      { label: 'Corrente (A)', data: [], borderColor: '#38bdf8', yAxisID: 'y1', tension: .35, pointRadius: 0, borderWidth: 2 },
-    ]},
-    options: {
-      responsive: true,
-      plugins: { legend: { labels: { color: chartDefaults.color } } },
-      scales: {
-        x: { ticks: { color: chartDefaults.color, maxTicksLimit: 8 }, grid: { color: chartDefaults.grid } },
-        y: { position: 'left', ticks: { color: '#a78bfa' }, grid: { color: chartDefaults.grid } },
-        y1: { position: 'right', ticks: { color: '#38bdf8' }, grid: { drawOnChartArea: false } },
+  if (!chartsAvailable) {
+    console.warn('Chart.js não carregou (sem conexão com o CDN). Os gráficos serão ocultados, mas o restante do dashboard continua funcional.');
+    ['consumptionChart', 'powerChart', 'liveChart', 'reportChart'].forEach(id =>
+      showChartFallback(document.getElementById(id), 'Gráfico indisponível — sem conexão com a internet (Chart.js via CDN).')
+    );
+    return;
+  }
+
+  try {
+    state.charts.consumption = createLineChart(document.getElementById('consumptionChart'), { label: 'Consumo (kWh)', color: '#22c55e', yLabel: 'kWh' });
+    state.charts.power = createLineChart(document.getElementById('powerChart'), { label: 'Potência (W)', color: '#f5b942', yLabel: 'W' });
+    state.charts.live = new Chart(document.getElementById('liveChart'), {
+      type: 'line',
+      data: { labels: [], datasets: [
+        { label: 'Tensão (V)', data: [], borderColor: '#a78bfa', yAxisID: 'y', tension: .35, pointRadius: 0, borderWidth: 2 },
+        { label: 'Corrente (A)', data: [], borderColor: '#38bdf8', yAxisID: 'y1', tension: .35, pointRadius: 0, borderWidth: 2 },
+      ]},
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: chartDefaults.color } } },
+        scales: {
+          x: { ticks: { color: chartDefaults.color, maxTicksLimit: 8 }, grid: { color: chartDefaults.grid } },
+          y: { position: 'left', ticks: { color: '#a78bfa' }, grid: { color: chartDefaults.grid } },
+          y1: { position: 'right', ticks: { color: '#38bdf8' }, grid: { drawOnChartArea: false } },
+        },
       },
-    },
-  });
-  state.charts.report = createLineChart(document.getElementById('reportChart'), { label: 'Consumo diário (kWh)', color: '#22c55e', yLabel: 'kWh' });
+    });
+    state.charts.report = createLineChart(document.getElementById('reportChart'), { label: 'Consumo diário (kWh)', color: '#22c55e', yLabel: 'kWh' });
+  } catch (err) {
+    // Mesmo que algo dê errado ao montar os gráficos, o restante do
+    // dashboard (navegação, cards, tabelas) não pode travar por causa disso.
+    console.error('Falha ao inicializar gráficos:', err);
+    chartsAvailable = false;
+  }
 }
 
 function filterByPeriod(period) {
@@ -379,6 +408,7 @@ function filterByPeriod(period) {
 }
 
 function updateConsumptionChart() {
+  if (!chartsAvailable || !state.charts.consumption) return;
   const data = filterByPeriod(state.currentPeriod);
   const step = Math.max(1, Math.floor(data.length / 60));
   const sampled = data.filter((_, i) => i % step === 0);
@@ -388,6 +418,7 @@ function updateConsumptionChart() {
 }
 
 function updatePowerChart() {
+  if (!chartsAvailable || !state.charts.power) return;
   const recent = state.readings.slice(-40);
   state.charts.power.data.labels = recent.map(r => fmt.hm(r.timestamp));
   state.charts.power.data.datasets[0].data = recent.map(r => r.power);
@@ -395,6 +426,7 @@ function updatePowerChart() {
 }
 
 function updateLiveChart() {
+  if (!chartsAvailable || !state.charts.live) return;
   const recent = state.readings.slice(-30);
   state.charts.live.data.labels = recent.map(r => fmt.hm(r.timestamp));
   state.charts.live.data.datasets[0].data = recent.map(r => r.voltage);
@@ -458,9 +490,11 @@ function renderReportView() {
   const labels = Object.keys(buckets);
   const values = Object.values(buckets);
 
-  state.charts.report.data.labels = labels;
-  state.charts.report.data.datasets[0].data = values;
-  state.charts.report.update();
+  if (chartsAvailable && state.charts.report) {
+    state.charts.report.data.labels = labels;
+    state.charts.report.data.datasets[0].data = values;
+    state.charts.report.update();
+  }
 
   const total = state.readings.length;
   const anomalies = state.readings.filter(r => r.anomaly).length;
@@ -580,9 +614,14 @@ function bindEvents() {
 }
 
 function init() {
+  // A ordem importa: bindEvents() é chamado ANTES de initCharts().
+  // Assim, mesmo que a biblioteca Chart.js não carregue (ex: sem internet
+  // no local da apresentação), a navegação entre abas, os cards e as
+  // tabelas continuam funcionando normalmente — só os gráficos ficam
+  // indisponíveis.
   buildCardsSkeleton();
-  initCharts();
   bindEvents();
+  initCharts();
   startUpdateLoop();
 }
 
